@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AssistantCore", "AssistantCore\AssistantCore.csproj", "{6CBF8EC2-0D7E-4B9E-B6D7-3E1A880FE667}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoreTests", "CoreTests\CoreTests.csproj", "{BCC6441B-3510-4291-9BD0-21AA233A56C6}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6CBF8EC2-0D7E-4B9E-B6D7-3E1A880FE667}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6CBF8EC2-0D7E-4B9E-B6D7-3E1A880FE667}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6CBF8EC2-0D7E-4B9E-B6D7-3E1A880FE667}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6CBF8EC2-0D7E-4B9E-B6D7-3E1A880FE667}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BCC6441B-3510-4291-9BD0-21AA233A56C6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BCC6441B-3510-4291-9BD0-21AA233A56C6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BCC6441B-3510-4291-9BD0-21AA233A56C6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BCC6441B-3510-4291-9BD0-21AA233A56C6}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

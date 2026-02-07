@@ -19,6 +19,7 @@ services:
       - USE_FILE_LOGGING=false
       - SEQ_URL=http://seq:5341
       - MINIMUM_LOG_LEVEL=Debug
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/google-service-key.json
     networks:
       - aiassistant
     depends_on:

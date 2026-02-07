@@ -1,0 +1,22 @@
+﻿### Enroll
+POST http://localhost:5264/companion/enroll
+Content-Type: application/json
+
+{
+  "device_name": "testing-device",
+  "public_key": "123",
+  "firebase_token": "example_token"
+}
+
+### Approve (TEMP)
+
+POST http://localhost:5264/companion/temp/approve
+Content-Type: application/json
+
+{
+  "device_id": "example_id"
+}
+
+### Notification
+
+GET http://localhost:5264/companion/send_test_notification

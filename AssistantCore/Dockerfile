@@ -18,6 +18,7 @@ RUN dotnet publish "./AssistantCore.csproj" -c $BUILD_CONFIGURATION -o /app/publ
 
 FROM base AS final
 ENV MINIMUM_LOG_LEVEL=Information
+ENV GOOGLE_APPLICATION_CREDENTIALS=/app/credentials.json
 WORKDIR /app
 COPY --from=publish /app/publish .
 EXPOSE 5264

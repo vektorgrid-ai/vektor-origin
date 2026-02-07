@@ -686,3 +686,7 @@ fabric.properties
 # Android studio 3.1+ serialized cache file
 
 # End of https://www.toptal.com/developers/gitignore/api/jetbrains,rider,aspnetcore,csharp
+
+## Custom rules for this repository
+logs/
+google-service-key.json

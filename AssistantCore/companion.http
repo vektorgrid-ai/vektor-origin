@@ -20,3 +20,7 @@ Content-Type: application/json
 ### Notification
 
 GET http://localhost:5264/companion/send_test_notification
+
+### Tool
+
+GET http://localhost:5264/companion/send_test_notification

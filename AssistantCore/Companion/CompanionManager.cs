@@ -22,7 +22,7 @@ public class CompanionManager(ICompanionMessageHandler messageHandler)
             { "payload_hash", "TODO" }, // TODO: security and hashing
             { "nonce", Guid.NewGuid().ToString() },
             { "expires_at", DateTime.Now.AddMinutes(5).ToString("O") },
-            { "tool_id", toolName },
+            { "tool_name", toolName },
             { "tool_description", description },
             { "tool_risk_level", riskLevel.ToString() }
         };

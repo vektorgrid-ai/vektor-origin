@@ -28,7 +28,7 @@ public class CompanionController(
         manager.RegisterCompanion(device);
 
         logger.LogInformation("New companion enrolled: {DeviceName} ({DeviceId})", device.DeviceName, device.DeviceId);
-        return Ok(new { deviceId = device.DeviceId, status = "PENDING_APPROVAL" });
+        return Ok(new { device_id = device.DeviceId, status = "PENDING_APPROVAL" });
     }
     
     [HttpPost("new_token")]

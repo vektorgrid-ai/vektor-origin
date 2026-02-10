@@ -5,14 +5,14 @@ namespace AssistantCore.Companion;
 
 public class CompanionManager(ICompanionMessageHandler messageHandler)
 {
-    private readonly List<CompanionDevice> _registeredCompanions = [];
-    public List<CompanionDevice> ApprovedCompanions => _registeredCompanions.Where(c => c.IsApproved).ToList();
+    public readonly List<CompanionDevice> RegisteredCompanions = [];
+    public List<CompanionDevice> ApprovedCompanions => RegisteredCompanions.Where(c => c.IsApproved).ToList();
 
-    public void RegisterCompanion(CompanionDevice device) => _registeredCompanions.Add(device);
-    public void UnregisterCompanion(string deviceId) => _registeredCompanions.RemoveAll(a => a.DeviceId == deviceId);
+    public void RegisterCompanion(CompanionDevice device) => RegisteredCompanions.Add(device);
+    public void UnregisterCompanion(string deviceId) => RegisteredCompanions.RemoveAll(a => a.DeviceId == deviceId);
 
     public CompanionDevice? GetCompanion(string deviceId) =>
-        _registeredCompanions.FirstOrDefault(c => c.DeviceId == deviceId);
+        RegisteredCompanions.FirstOrDefault(c => c.DeviceId == deviceId);
 
     public void RequestToolApproval(string toolName, string description, RiskLevel riskLevel)
     {

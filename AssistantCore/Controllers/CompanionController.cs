@@ -12,6 +12,40 @@ public class CompanionController(
     CompanionManager manager,
     ILogger<CompanionController> logger) : ControllerBase
 {
+    [HttpGet]
+    public IActionResult GetCompanions()
+    {
+        var companions = manager.RegisteredCompanions.Select(c => new
+        {
+            device_id = c.DeviceId,
+            device_name = c.DeviceName,
+            is_approved = c.IsApproved,
+            created_at = c.CreatedAt
+        });
+        return Ok(companions);
+    }
+
+    [HttpGet("approved")]
+    public IActionResult GetApprovedCompanions()
+    {
+        var companions = manager.ApprovedCompanions.Select(c => new
+        {
+            device_id = c.DeviceId,
+            device_name = c.DeviceName,
+            is_approved = c.IsApproved,
+            created_at = c.CreatedAt
+        });
+        return Ok(companions);
+    }
+
+    [HttpGet("{deviceId}")]
+    public IActionResult GetById(string deviceId)
+    {
+        var companion = manager.GetCompanion(deviceId);
+        if (companion == null) return NotFound("Device not found");
+        return Ok(companion);
+    }
+    
     [HttpPost("enroll")]
     public IActionResult Enroll([FromBody] EnrollmentRequest req)
     {

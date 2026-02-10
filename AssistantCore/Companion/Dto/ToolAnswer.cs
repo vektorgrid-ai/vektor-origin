@@ -10,4 +10,5 @@ public struct ToolAnswer
     [JsonPropertyName("timestamp")] public long Timestamp { get; set; }
     [JsonPropertyName("signature")] public string Signature { get; set; }
     [JsonPropertyName("public_key")] public string PublicKey { get; set; }
+    [JsonPropertyName("payload_hash")] public string PayloadHash { get; set; }
 }

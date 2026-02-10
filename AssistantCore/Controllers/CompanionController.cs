@@ -10,6 +10,7 @@ namespace AssistantCore.Controllers;
 [Route("companion")]
 public class CompanionController(
     CompanionManager manager,
+    RequestValidator validator,
     ILogger<CompanionController> logger) : ControllerBase
 {
     [HttpGet]
@@ -69,27 +70,66 @@ public class CompanionController(
     public IActionResult RegisterNewToken([FromBody] NewTokenRequest request)
     {
         if (!ValidateDeviceId(request.DeviceId, false, out var device, out var errorResult)) return errorResult!;
-        device = device!;
         
-        manager.GetCompanion(request.DeviceId)?.FirebaseToken = request.Token;
+        device!.FirebaseToken = request.Token;
         logger.LogDebug("Updated Firebase token for device {DeviceId}", request.DeviceId);
         return Ok("Token updated successfully");
     }
 
     [HttpPost("answer_request")]
-    public IActionResult AnswerRequest([FromBody] ToolAnswer request)
+    public IActionResult AnswerRequest([FromBody] ToolAnswer answer)
     {
-        if (!ValidateDeviceId(request.DeviceId, true, out var device, out var errorResult)) return errorResult!;
-        device = device!;
+        if (!ValidateDeviceId(answer.DeviceId, true, out var device, out var errorResult)) return errorResult!;
         
-        // TODO: verify request, check signature, implement approval logic
-        return Ok("Answer received");
+        // TODO: Check nonce replay using redis caching
+        
+        ToolApprovalRequest? correspondingRequest = manager.ToolApprovals.FirstOrDefault(rq => rq.RequestId == answer.RequestId);
+        if (correspondingRequest == null)
+        {
+            logger.LogWarning("No corresponding tool approval request found for answer from device {DeviceId}", answer.DeviceId);
+            return BadRequest("No corresponding request found");
+        }
+
+        if (correspondingRequest.ExpiresAt < DateTime.UtcNow)
+        {
+            logger.LogWarning("Tool approval request with id {RequestId} expired for answer from device {DeviceId}", correspondingRequest.RequestId, answer.DeviceId);
+            return BadRequest("Request expired");
+        }
+
+        if (device?.PublicKey != answer.PublicKey)
+        {
+            logger.LogWarning("Public key mismatch for tool approval from device {DeviceId}", answer.DeviceId);
+            return BadRequest("Public key mismatch");
+        }
+
+        if (!manager.VerifyHash(correspondingRequest, answer.PayloadHash))
+        {
+            logger.LogWarning("Payload hash mismatch for tool approval from device {DeviceId}", answer.DeviceId);
+            return BadRequest("Payload hash mismatch");
+        }
+        
+        byte[] signedData = validator.BuildSignedPayload(correspondingRequest, answer);
+        if (!validator.VerifyApprovalSignature(answer.PublicKey, answer.Signature, signedData))
+        {
+            logger.LogWarning("Invalid signature for tool approval from device {DeviceId}", answer.DeviceId);
+            return BadRequest("Invalid signature");
+        }
+        
+        // TODO: actually approve tool
+        
+        return Ok("Tool execution approved");
     }
 
     [HttpGet("send_test_tool")]
     public IActionResult SendTestTool()
     {
-        manager.RequestToolApproval("TestTool", "This is a test tool for demonstration purposes.", RiskLevel.None);
+        var tool = new ToolApprovalRequest.ToolData
+        {
+            Name = "TestTool",
+            Description = "This is a test tool for demonstration purposes.",
+            RiskLevel = RiskLevel.None
+        };
+        manager.RequestToolApproval(tool);
         return Ok();
     }
     [HttpGet("send_test_notification")]

@@ -1,12 +1,19 @@
-﻿using AssistantCore.Companion.Messaging;
-using AssistantCore.Companion.Security;
+﻿using System.Security.Cryptography;
+using System.Text;
+using AssistantCore.Companion.Dto;
+using AssistantCore.Companion.Messaging;
 
 namespace AssistantCore.Companion;
 
 public class CompanionManager(ICompanionMessageHandler messageHandler)
 {
+    public static readonly TimeSpan ApprovalTimeout = TimeSpan.FromMinutes(5);
+    
     public readonly List<CompanionDevice> RegisteredCompanions = [];
     public List<CompanionDevice> ApprovedCompanions => RegisteredCompanions.Where(c => c.IsApproved).ToList();
+    
+    // TODO: put in central storage
+    public readonly List<ToolApprovalRequest> ToolApprovals = [];
 
     public void RegisterCompanion(CompanionDevice device) => RegisteredCompanions.Add(device);
     public void UnregisterCompanion(string deviceId) => RegisteredCompanions.RemoveAll(a => a.DeviceId == deviceId);
@@ -14,18 +21,30 @@ public class CompanionManager(ICompanionMessageHandler messageHandler)
     public CompanionDevice? GetCompanion(string deviceId) =>
         RegisteredCompanions.FirstOrDefault(c => c.DeviceId == deviceId);
 
-    public void RequestToolApproval(string toolName, string description, RiskLevel riskLevel)
+    public void RequestToolApproval(ToolApprovalRequest.ToolData toolData)
     {
+        var hash = HashPayload(toolData);
+        var hashBase64 = Convert.ToBase64String(hash);
+        var request = new ToolApprovalRequest
+        {
+            RequestId = Guid.NewGuid().ToString(),
+            PayloadHash = hashBase64,
+            Nonce = Guid.NewGuid().ToString(),
+            ExpiresAt = DateTime.Now.Add(ApprovalTimeout),
+            Tool = toolData
+        };
         var data = new Dictionary<string, string>
         {
-            { "request_id", Guid.NewGuid().ToString() },
-            { "payload_hash", "TODO" }, // TODO: security and hashing
-            { "nonce", Guid.NewGuid().ToString() },
-            { "expires_at", DateTime.Now.AddMinutes(5).ToString("O") },
-            { "tool_name", toolName },
-            { "tool_description", description },
-            { "tool_risk_level", riskLevel.ToString() }
+            { "request_id", request.RequestId },
+            { "payload_hash", request.PayloadHash },
+            { "nonce",request.Nonce },
+            { "expires_at", request.ExpiresAt.ToString("O") },
+            { "tool_name", request.Tool.Name },
+            { "tool_description", request.Tool.Description },
+            { "tool_risk_level", request.Tool.RiskLevel.ToString() }
         };
+        
+        ToolApprovals.Add(request);
         messageHandler.SendDataMessageToDevices(data, ApprovedCompanions.ToArray());
     }
 
@@ -44,5 +63,20 @@ public class CompanionManager(ICompanionMessageHandler messageHandler)
     public void SendNotification(string title, string message)
     {
         messageHandler.SendNotificationToDevices(title, message, ApprovedCompanions.ToArray());
+    }
+
+    public bool VerifyHash(ToolApprovalRequest request, string payloadHash)
+    {
+        var expectedHash = HashPayload(request.Tool);
+        var expectedHashBase64 = Convert.ToBase64String(expectedHash);
+
+        return expectedHashBase64 == payloadHash;
+    }
+
+    private byte[] HashPayload(ToolApprovalRequest.ToolData data)
+    {
+        string payloadString = $"{data.Name}|{data.Description}|{data.RiskLevel}";
+        using var sha256 = SHA256.Create();
+        return sha256.ComputeHash(Encoding.UTF8.GetBytes(payloadString));
     }
 }

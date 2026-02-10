@@ -5,6 +5,7 @@ using AssistantCore.Workers;
 using AssistantCore.Chat;
 using AssistantCore.Companion;
 using AssistantCore.Companion.Messaging;
+using AssistantCore.Companion.Security;
 using AssistantCore.Middleware;
 using AssistantCore.Workers.LoadBalancing;
 using Serilog;
@@ -56,6 +57,7 @@ try
     builder.Services.AddSingleton<HttpClient>();
     builder.Services.AddSingleton<CompanionManager>();
     builder.Services.AddSingleton<ICompanionMessageHandler, FirebaseMessageHandler>();
+    builder.Services.AddSingleton<RequestValidator>();
     builder.Services.AddSingleton(provider => ChatManager.Create(TimeSpan.FromMinutes(30)));
     builder.Services.AddSingleton<SatelliteManager>();
     builder.Services.AddSingleton<WorkerRegistry>();

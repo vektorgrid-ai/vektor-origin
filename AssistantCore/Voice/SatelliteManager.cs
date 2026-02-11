@@ -19,7 +19,7 @@ public class SatelliteManager
     private ToolCollector _collector;
     private readonly ILogger<SatelliteManager> _logger;
 
-    private readonly ConcurrentDictionary<string, CancellationTokenSource> _activePipelines = new();
+    private readonly ConcurrentDictionary<string, (SatelliteConnection connection, CancellationTokenSource cts)> _activePipelines = new();
 
     public SatelliteManager(
         WorkerRegistry registry,
@@ -57,13 +57,17 @@ public class SatelliteManager
         CancelPipeline(connection.ConnectionId);
     }
 
+    public SatelliteConnection[] GetActiveConnections() => _activePipelines.Values
+        .Select(v => v.connection)
+        .ToArray();
+
     private async Task HandleSessionCompletedAsync(SatelliteConnection connection, SatelliteSession session)
     {
         _logger.LogInformation("Handling completed session {SessionId} for connection {ConnectionId}", session.SessionId, connection.ConnectionId);
         CancelPipeline(connection.ConnectionId); // cancel any existing pipeline for this connection
 
         var cts = new CancellationTokenSource();
-        _activePipelines[connection.ConnectionId] = cts;
+        _activePipelines[connection.ConnectionId] = (connection, cts);
         
         var orchestrator = new VoiceSessionOrchestrator(
             session, 
@@ -96,10 +100,10 @@ public class SatelliteManager
 
     public void CancelPipeline(string connectionId)
     {
-        if (_activePipelines.TryRemove(connectionId, out var cts))
+        if (_activePipelines.TryRemove(connectionId, out var connectionInfo))
         {
             _logger.LogInformation("Cancelling pipeline for connection {ConnectionId}", connectionId);
-            cts.Cancel();
+            connectionInfo.cts.Cancel();
         }
     }
 
@@ -108,11 +112,11 @@ public class SatelliteManager
         _logger.LogInformation("Cancelling all active pipelines ({Count})", _activePipelines.Count);
         foreach (var kv in _activePipelines)
         {
-            if (_activePipelines.TryRemove(kv.Key, out var cts))
+            if (_activePipelines.TryRemove(kv.Key, out var connectionInfo))
             {
                 try
                 {
-                    cts.Cancel();
+                    connectionInfo.cts.Cancel();
                 }
                 catch (Exception ex)
                 {

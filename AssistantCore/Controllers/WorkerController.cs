@@ -47,21 +47,42 @@ public class WorkerController(WorkerRegistry registry) : ControllerBase
     [HttpGet("")]
     public IActionResult GetAllWorkers()
     {
-        return Ok(registry.GetAllWorkers());
+        var workers = registry.GetAllWorkers().Select(WorkerToDto);
+        return Ok(workers);
     }
     
     [HttpGet("alive")]
     public IActionResult GetAliveWorkers()
     {
-        return Ok(registry.GetAliveWorkers());
+        var workers = registry.GetAliveWorkers().Select(WorkerToDto);
+        return Ok(workers);
     }
     
     [HttpGet("{workerId}")]
     public IActionResult GetWorker(string workerId)
     {
-        var worker = registry.GetWorker(workerId);
-        if (worker == null)
+        var w = registry.GetWorker(workerId);
+        if (w == null)
             return NotFound("Worker not found");
+        
+        var worker = WorkerToDto(w);
         return Ok(worker);
+    }
+
+    private object WorkerToDto(WorkerDescriptor w)
+    {
+        return new
+        {
+            worker_id = w.WorkerId,
+            type = w.Type.ToString(),
+            endpoint = w.Endpoint,
+            last_seen = w.LastSeenUtc.ToString("O"),
+            capabilities = new
+            {
+                supports_streaming = w.Capabilities.SupportsStreaming,
+                supports_tools = w.Capabilities.SupportsTools,
+                models = w.Capabilities.Models
+            },
+        };
     }
 }

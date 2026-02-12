@@ -35,8 +35,10 @@ if (useFileLogging)
 if (useSeq)
     loggerConfig = loggerConfig.WriteTo.Seq(seqUrl!, apiKey: null, restrictedToMinimumLevel: minimumLevel);
 
-
-loggerConfig = loggerConfig.WriteTo.Console();
+var recentSink = new RecentLogSink();
+loggerConfig = loggerConfig
+    .WriteTo.Console()
+    .WriteTo.Sink(recentSink);
 
 Log.Logger = loggerConfig.CreateLogger();
 
@@ -55,6 +57,7 @@ try
         return tc;
     });
     builder.Services.AddSingleton<HttpClient>();
+    builder.Services.AddSingleton(recentSink);
     builder.Services.AddSingleton<CompanionManager>();
     builder.Services.AddSingleton<ICompanionMessageHandler, FirebaseMessageHandler>();
     builder.Services.AddSingleton<RequestValidator>();

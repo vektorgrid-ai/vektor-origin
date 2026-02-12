@@ -67,11 +67,12 @@ public class SystemController(
     }
 
     [HttpGet("logs")]
-    public IActionResult GetLogs([FromQuery] int count = 100, [FromQuery] int offset = 0)
+    public IActionResult GetLogs([FromQuery] int limit = 100, [FromQuery] int offset = 0)
     {
         var snapshot = recentLogs.GetSnapshot()
+            .Reverse()
             .Skip(offset)
-            .Take(count)
+            .Take(limit)
             .Select(l => new
             {
                 timestamp = l.Timestamp,

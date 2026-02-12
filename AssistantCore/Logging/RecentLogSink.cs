@@ -10,7 +10,7 @@ public class RecentLogSink(int capacity = 1000) : ILogEventSink, IDisposable
     public void Emit(LogEvent logEvent)
     {
         _queue.Enqueue(logEvent);
-        // trim if necessary
+
         if (_queue.Count > capacity)
         {
             lock (_trimLock)

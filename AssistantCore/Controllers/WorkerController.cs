@@ -69,7 +69,14 @@ public class WorkerController(WorkerRegistry registry) : ControllerBase
         return Ok(worker);
     }
 
-    private object WorkerToDto(WorkerDescriptor w)
+    [HttpGet("tasks")]
+    public IActionResult GetActiveTasks()
+    {
+        // TODO: keep track of tasks
+        return NoContent();
+    }
+
+    private static object WorkerToDto(WorkerDescriptor w)
     {
         return new
         {

@@ -16,7 +16,22 @@ public class SatelliteController(SatelliteManager manager,
         {
             connection_id = c.ConnectionId,
             connection_state = c.State.ToString(),
-            device_name = c.SatelliteInfo?.SatelliteId
+            device_name = c.SatelliteInfo?.SatelliteId,
+            audio_format = new
+            {
+                encoding = c.SatelliteInfo?.AudioFormat.Encoding,
+                channels = c.SatelliteInfo?.AudioFormat.Channels,
+                sample_rate = c.SatelliteInfo?.AudioFormat.SampleRate,
+                frame_ms = c.SatelliteInfo?.AudioFormat.FrameMs
+            },
+            area = c.SatelliteInfo?.Area,
+            version = c.SatelliteInfo?.ProtocolVersion,
+            capabilities = new
+            {
+                has_display = c.SatelliteInfo?.Capabilities.Display,
+                has_speaker = c.SatelliteInfo?.Capabilities.Display,
+                supports_streaming = c.SatelliteInfo?.Capabilities.SupportsStreamingTts
+            }
         });
         return Ok(satellites);
     }

@@ -18,7 +18,7 @@ public record LlmInput
     [JsonPropertyName("tools")] public ToolDto[] Tools { get; init; }
     [JsonPropertyName("chat_context")] public ChatContext ChatContext { get; init; }
 
-    public LlmInput(string prompt, ToolDto[] tools, ChatContext chatContext)
+    public LlmInput(string? prompt, ToolDto[] tools, ChatContext chatContext)
     {
         Prompt = prompt;
         Tools = tools;

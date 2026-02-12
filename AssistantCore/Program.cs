@@ -1,4 +1,5 @@
 using System.Reflection;
+using AssistantCore.Agents;
 using AssistantCore.Tools;
 using AssistantCore.Voice;
 using AssistantCore.Workers;
@@ -70,6 +71,9 @@ try
     builder.Services.AddSingleton<IRoutingWorkerClient, HttpRoutingWorkerClient>();
     builder.Services.AddSingleton<ILlmWorkerClient, HttpLlmWorkerClient>();
     builder.Services.AddSingleton<ITtsWorkerClient, HttpTtsWorkerClient>();
+
+    builder.Services.AddSingleton<ToolExecutor>();
+    builder.Services.AddSingleton<LlmAgent>();
 
     var app = builder.Build();
 

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using AssistantCore.Agents;
 using AssistantCore.Workers;
 using AssistantCore.Chat;
 using AssistantCore.Tools;
@@ -11,12 +12,11 @@ public class SatelliteManager
 {
     private ISttWorkerClient _stt;
     private IRoutingWorkerClient _router;
-    private ILlmWorkerClient _llm;
     private ITtsWorkerClient _tts;
     private WorkerRegistry _registry;
     private ILoadBalancer _balancer;
     private ChatManager _chat;
-    private ToolCollector _collector;
+    private LlmAgent _agent;
     private readonly ILogger<SatelliteManager> _logger;
 
     private readonly ConcurrentDictionary<string, (SatelliteConnection connection, CancellationTokenSource cts)> _activePipelines = new();
@@ -26,23 +26,21 @@ public class SatelliteManager
         ILoadBalancer balancer,
         ISttWorkerClient stt,
         IRoutingWorkerClient router,
-        ILlmWorkerClient llm,
         ITtsWorkerClient tts,
         ChatManager chat,
-        ToolCollector collector,
+        LlmAgent agent,
         ILogger<SatelliteManager> logger)
     {
         _stt = stt;
         _router = router;
-        _llm = llm;
         _tts = tts;
         
         _registry = registry;
         _balancer = balancer;
         _chat = chat;
+        _agent = agent;
         _logger = logger;
 
-        _collector = collector;
     }
 
     public void RegisterConnection(SatelliteConnection connection)
@@ -72,11 +70,10 @@ public class SatelliteManager
         var orchestrator = new VoiceSessionOrchestrator(
             session, 
             connection, 
-            _stt, _router, _llm, _tts,
-            _chat,
+            _stt, _router, _tts,
+            _chat, _agent,
             _registry, 
-            _balancer, 
-            _collector,
+            _balancer,
             _logger);
 
         try

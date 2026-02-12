@@ -1,4 +1,5 @@
-﻿using AssistantCore.Chat;
+﻿using AssistantCore.Agents;
+using AssistantCore.Chat;
 using AssistantCore.Tools;
 using AssistantCore.Workers;
 using AssistantCore.Workers.Dto.Impl;
@@ -15,12 +16,11 @@ public class VoiceSessionOrchestrator(
     SatelliteConnection connection,
     ISttWorkerClient stt,
     IRoutingWorkerClient router,
-    ILlmWorkerClient llm,
     ITtsWorkerClient tts,
     ChatManager chat,
+    LlmAgent agent,
     WorkerRegistry registry,
     ILoadBalancer balancer,
-    ToolCollector collector,
     ILogger<SatelliteManager> parentLogger)
 {
     private readonly ILogger _logger = parentLogger;
@@ -37,8 +37,8 @@ public class VoiceSessionOrchestrator(
             var speciality = await InferRouterAsync(text, token);
             _logger.LogInformation("Routed session {SessionId} to speciality {Speciality}", session.SessionId, speciality);
 
-            _logger.LogInformation("Sending input to LLM for session {SessionId}", session.SessionId);
-            var response = await InferLlmAsync(text, speciality, token);
+            _logger.LogInformation(" handing off to Agent for session {SessionId}", session.SessionId);
+            var response = await agent.ProcessAsync(text, chat, speciality, connection.SatelliteInfo?.Area ?? "unknown", token);
             _logger.LogInformation("LLM response for session {SessionId}: {ResponsePreview}", session.SessionId, response?.Substring(0, Math.Min(200, response.Length)));
 
             var audioBytes = await InferTtsAsync(response, token);
@@ -84,19 +84,6 @@ public class VoiceSessionOrchestrator(
             speciality = LlmSpeciality.General;
         
         return speciality;
-    }
-    private async Task<string> InferLlmAsync(string text, LlmSpeciality speciality, CancellationToken token)
-    {
-        var candidates = registry.GetAliveWorkersOfType(WorkerType.Llm);
-        var worker = balancer.Select(candidates, "llm");
-        var tools = collector.GetToolsBySpeciality(speciality)
-            .Select(t => t.ToDto())
-            .ToArray();
-        // TODO: fill in values dynamically
-        var input = new LlmRequest("0", new LlmInput(text, tools, chat.GetContext()), 
-            new LlmConfig(4096, 0.2f), new LlmContext(connection.SatelliteInfo?.Area ?? "unknown"));
-        var result = await llm.InferAsync(worker, input, token);
-        return result.Output.Text;
     }
     private async Task<byte[]> InferTtsAsync(string text, CancellationToken token)
     {

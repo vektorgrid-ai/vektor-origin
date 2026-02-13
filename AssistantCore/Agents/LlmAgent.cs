@@ -53,12 +53,12 @@ public class LlmAgent(
             {
                 foreach (var call in response.ToolCalls)
                 {
-                    logger.LogInformation("Agent requested tool: {ToolName}", call.ToolName);
-                    chat.AddEvent(new ToolCall(call.ToolName, call.JsonArgs));
+                    logger.LogInformation("Agent requested tool: {ToolName}", call.Function.Name);
+                    chat.AddEvent(new ToolCall(call.Function.Name, call.Function.Arguments.GetRawText()));
                     
-                    var toolResult = await toolExecutor.ExecuteAsync(call.ToolName, call.JsonArgs);
+                    var toolResult = await toolExecutor.ExecuteAsync(call.Function.Name, call.Function.Arguments);
                     var jsonResult = JsonSerializer.Serialize(toolResult);
-                    chat.AddEvent(new ToolResult(call.ToolName, jsonResult));
+                    chat.AddEvent(new ToolResult(call.Function.Name, jsonResult));
                 }
                 continue;
             }

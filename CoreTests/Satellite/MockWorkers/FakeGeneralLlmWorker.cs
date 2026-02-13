@@ -12,6 +12,6 @@ public class FakeGeneralLlmWorker : ILlmWorkerClient
     public Task<LlmResponse> InferAsync(WorkerDescriptor worker, LlmRequest input, CancellationToken ct)
     {
         return Task.FromResult(new LlmResponse("0", new WorkerUsage("fake-llm", 1),
-            new LlmOutput("This is a fake LLM response."), null));
+            new LlmOutput("This is a fake LLM response.", []), null));
     }
 }

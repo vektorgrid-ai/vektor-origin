@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace AssistantCore.Workers.Dto.Impl;
 
@@ -14,21 +15,33 @@ public record LlmOutput
 {
     [JsonPropertyName("text")] public string Text { get; init; }
     [JsonPropertyName("tool_calls")] public List<LlmToolCall> ToolCalls { get; set; }
-
-    public LlmOutput(string text)
+    
+    public LlmOutput(string text, List<LlmToolCall> toolCalls)
     {
         Text = text;
+        ToolCalls = toolCalls;
     }
 }
 
 public record LlmToolCall
 {
-    [JsonPropertyName("name")] public string ToolName { get; set; }
-    [JsonPropertyName("arguments")] public string JsonArgs { get; set; }
-
-    public LlmToolCall(string toolName, string jsonArgs)
+    // {"function":{"name":"get_weather","arguments":{"unit":"Celsius","location":"office"}}}
+    [JsonPropertyName("function")] public LlmToolFunction Function { get; set; }
+    
+    public LlmToolCall(LlmToolFunction function)
     {
-        ToolName = toolName;
-        JsonArgs = jsonArgs;
+        Function = function;
+    }
+    
+    public record LlmToolFunction
+    {
+        [JsonPropertyName("name")] public string Name { get; set; }
+        [JsonPropertyName("arguments")] public JsonElement Arguments { get; set; }
+        
+        public LlmToolFunction(string name, JsonElement arguments)
+        {
+            Name = name;
+            Arguments = arguments;
+        }
     }
 }

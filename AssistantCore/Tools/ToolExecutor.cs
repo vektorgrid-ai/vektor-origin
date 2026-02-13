@@ -18,7 +18,7 @@ public class ToolExecutor(
 {
     public static RiskLevel MaximumAutoApproveLevel = RiskLevel.Medium;
     
-    public async Task<object?> ExecuteAsync(string toolName, string jsonArgs)
+    public async Task<object?> ExecuteAsync(string toolName, JsonElement args)
     {
         var tool = collector.GetTools().FirstOrDefault(t => t.Attribute.ToolName == toolName);
         if (tool.Method == null)
@@ -47,9 +47,8 @@ public class ToolExecutor(
             var instance = tool.Method.IsStatic 
                 ? null 
                 : ActivatorUtilities.GetServiceOrCreateInstance(services, tool.Method.DeclaringType!);
-
-            var argsDictionary = JsonSerializer.Deserialize<Dictionary<string, object>>(jsonArgs);
-            var parameters = MapParameters(tool.Method, argsDictionary ?? []);
+            
+            var parameters = MapParameters(tool.Method, args);
             
             var result = tool.Method.Invoke(instance, parameters);
 
@@ -69,7 +68,7 @@ public class ToolExecutor(
         }
     }
 
-    private object?[] MapParameters(MethodInfo method, Dictionary<string, object> args)
+    private object?[] MapParameters(MethodInfo method, JsonElement args)
     {
         var parameters = method.GetParameters();
         var result = new object?[parameters.Length];
@@ -80,10 +79,27 @@ public class ToolExecutor(
             var attr = p.GetCustomAttribute<LlmToolParamAttribute>();
             var name = attr?.ParamName ?? p.Name!;
 
-            if (args.TryGetValue(name, out var val))
+            if (args.TryGetProperty(name, out var jsonValue))
             {
-                // Simple conversion - in production you might need more robust JSON element conversion
-                result[i] = Convert.ChangeType(val.ToString(), p.ParameterType);
+                if (p.ParameterType.IsEnum)
+                {
+                    var enumString = jsonValue.GetString();
+                    if (enumString == null || !Enum.TryParse(p.ParameterType, enumString, true, out var enumValue))
+                    {
+                        throw new ArgumentException($"Invalid value for enum parameter '{name}': {enumString}");
+                    }
+                    result[i] = enumValue;
+                    continue;
+                }
+                result[i] = JsonSerializer.Deserialize(jsonValue.GetRawText(), p.ParameterType);
+            }
+            else if (p.HasDefaultValue)
+            {
+                result[i] = p.DefaultValue;
+            }
+            else
+            {
+                throw new ArgumentException($"Missing required parameter '{name}' for tool '{method.Name}'");
             }
         }
 

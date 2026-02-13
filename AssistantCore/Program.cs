@@ -17,9 +17,14 @@ string? seqUrl = Environment.GetEnvironmentVariable("SEQ_URL");
 bool useSeq = !string.IsNullOrEmpty(seqUrl);
 bool useFileLogging = Environment.GetEnvironmentVariable("USE_FILE_LOGGING") == "true";
 string logLevel = Environment.GetEnvironmentVariable("MINIMUM_LOG_LEVEL") ?? "Information";
+string maximumAutoApproveLevel = Environment.GetEnvironmentVariable("MAXIMUM_AUTO_APPROVE_RISK_LEVEL") ?? "Medium";
 
 if (!Enum.TryParse<LogEventLevel>(logLevel, true, out var minimumLevel))
     minimumLevel = LogEventLevel.Information;
+if (!Enum.TryParse<RiskLevel>(maximumAutoApproveLevel, true, out var autoApproveLevel))
+    autoApproveLevel = RiskLevel.Medium;
+
+ToolExecutor.MaximumAutoApproveLevel = autoApproveLevel;
 
 var loggerConfig = new LoggerConfiguration()
     .MinimumLevel.Is(minimumLevel)

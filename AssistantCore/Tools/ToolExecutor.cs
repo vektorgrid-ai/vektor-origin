@@ -2,6 +2,9 @@
 
 using System.Reflection;
 using System.Text.Json;
+using AssistantCore.Companion;
+using AssistantCore.Companion.Dto;
+using AssistantCore.Companion.Security;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -10,8 +13,11 @@ namespace AssistantCore.Tools;
 public class ToolExecutor(
     ToolCollector collector, 
     IServiceProvider services, 
+    CompanionManager manager,
     ILogger<ToolExecutor> logger)
 {
+    public static RiskLevel MaximumAutoApproveLevel = RiskLevel.Medium;
+    
     public async Task<object?> ExecuteAsync(string toolName, string jsonArgs)
     {
         var tool = collector.GetTools().FirstOrDefault(t => t.Attribute.ToolName == toolName);
@@ -19,6 +25,20 @@ public class ToolExecutor(
         {
             logger.LogWarning("Attempted to execute unknown tool: {ToolName}", toolName);
             return "Error: Tool not found.";
+        }
+
+        if (tool.Attribute.RiskLevel > MaximumAutoApproveLevel)
+        {
+            logger.LogWarning("Tool {ToolName} requires manual approval due to its danger level ({DangerLevel}).", toolName, tool.Attribute.RiskLevel);
+            ToolApprovalRequest.ToolData data = new ToolApprovalRequest.ToolData
+            {
+                Name = tool.Attribute.ToolName,
+                Description = tool.Attribute.Description,
+                RiskLevel = RiskLevel.Critical,
+            };
+            manager.RequestToolApproval(data);
+            // TODO: track pending approvals and return result when approved/rejected
+            return $"Tool '{toolName}' requires approval before it can be executed. Approval requests have been sent to your approved devices.";
         }
 
         try

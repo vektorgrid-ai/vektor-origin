@@ -2,7 +2,7 @@ services:
   seq:
     image: datalust/seq:latest
     ports:
-      - 5341:80
+      - "5341:80"
     environment:
       - ACCEPT_EULA=Y
       - SEQ_FIRSTRUN_NOAUTHENTICATION=true
@@ -14,11 +14,12 @@ services:
       context: .
       dockerfile: AssistantCore/Dockerfile
     ports:
-      - 5264:5264
+      - "5264:5264"
     environment:
       - USE_FILE_LOGGING=false
       - SEQ_URL=http://seq:5341
       - MINIMUM_LOG_LEVEL=Debug
+      - MAXIMUM_AUTO_APPROVE_RISK_LEVEL=Medium
       - GOOGLE_APPLICATION_CREDENTIALS=/app/google-service-key.json
     networks:
       - aiassistant

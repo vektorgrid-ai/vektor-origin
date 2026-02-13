@@ -13,8 +13,8 @@ public record LlmResponse : WorkerResponse<LlmOutput>
 
 public record LlmOutput
 {
-    [JsonPropertyName("text")] public string Text { get; init; }
-    [JsonPropertyName("tool_calls")] public List<LlmToolCall> ToolCalls { get; set; }
+    [JsonPropertyName("text")] public string? Text { get; init; }
+    [JsonPropertyName("tool_calls")] public List<LlmToolCall>? ToolCalls { get; set; }
     
     public LlmOutput(string text, List<LlmToolCall> toolCalls)
     {

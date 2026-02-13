@@ -53,7 +53,9 @@ public class ChatManager
         return new ChatContext
         {
             ChatId = _chatId,
-            Events = new List<ChatEvent>(_chatEvents)
+            Events = _chatEvents
+                .Where(e => e is not ToolCall)
+                .ToList()
         };
      
     }

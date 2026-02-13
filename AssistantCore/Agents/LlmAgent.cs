@@ -35,12 +35,7 @@ public class LlmAgent(
         {
             var candidates = registry.GetAliveWorkersOfType(WorkerType.Llm);
             var worker = balancer.Select(candidates, "llm");
-
-            // 3. Prepare Request
-            // Note: We pass the full chat context. 
-            // For the first turn, 'userText' is already in history, but some LLM APIs 
-            // might expect the current prompt in a specific field. 
-            // Here we assume the LLM worker constructs the prompt from the ChatContext.
+            
             var input = new LlmRequest("0", 
                 new LlmInput(turn == 1 ? userText : null, tools, chat.GetContext()), 
                 new LlmConfig(4096, 0.2f), 
@@ -49,7 +44,7 @@ public class LlmAgent(
             var result = await llmClient.InferAsync(worker, input, token);
             var response = result.Output;
             
-            if (response.ToolCalls.Count != 0)
+            if (response.ToolCalls != null && response.ToolCalls.Count != 0)
             {
                 foreach (var call in response.ToolCalls)
                 {

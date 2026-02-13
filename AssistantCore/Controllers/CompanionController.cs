@@ -18,7 +18,7 @@ public class CompanionController(
     {
         var companions = manager.RegisteredCompanions.Select(c => new
         {
-            device_id = c.DeviceId,
+            device_id = c.DeviceId[..8], // Don't return full device id for security reasons
             device_name = c.DeviceName,
             is_approved = c.IsApproved,
             created_at = c.CreatedAt

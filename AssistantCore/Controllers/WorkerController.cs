@@ -24,6 +24,7 @@ public class WorkerController(WorkerRegistry registry) : ControllerBase
             Capabilities = new WorkerCapabilities
             {
                 // TODO
+                Models = []
             }
         };
         

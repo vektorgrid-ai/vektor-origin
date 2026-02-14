@@ -115,13 +115,14 @@ public class CompanionController(
             return BadRequest("Invalid signature");
         }
         
-        // TODO: actually approve tool
+        bool isApproved = answer.Decision.Equals("APPROVE", StringComparison.OrdinalIgnoreCase);
+        manager.HandleToolResponse(answer.RequestId, isApproved);
         
-        return Ok("Tool execution approved");
+        return Ok("Tool execution processed");
     }
 
     [HttpGet("send_test_tool")]
-    public IActionResult SendTestTool()
+    public async Task<IActionResult> SendTestTool()
     {
         var tool = new ToolApprovalRequest.ToolData
         {
@@ -129,9 +130,10 @@ public class CompanionController(
             Description = "This is a test tool for demonstration purposes.",
             RiskLevel = RiskLevel.None
         };
-        manager.RequestToolApproval(tool);
-        return Ok();
+        var result = await manager.RequestToolApprovalAsync(tool);
+        return Ok(new { approved = result });
     }
+
     [HttpGet("send_test_notification")]
     public IActionResult SendTestNotification()
     {

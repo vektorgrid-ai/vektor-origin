@@ -1,4 +1,5 @@
-﻿using System.Security.Cryptography;
+﻿using System.Collections.Concurrent;
+using System.Security.Cryptography;
 using System.Text;
 using AssistantCore.Companion.Dto;
 using AssistantCore.Companion.Messaging;
@@ -14,6 +15,8 @@ public class CompanionManager(ICompanionMessageHandler messageHandler)
     
     // TODO: put in central storage
     public readonly List<ToolApprovalRequest> ToolApprovals = [];
+    
+    private readonly ConcurrentDictionary<string, TaskCompletionSource<bool>> _pendingApprovals = new();
 
     public void RegisterCompanion(CompanionDevice device) => RegisteredCompanions.Add(device);
     public void UnregisterCompanion(string deviceId) => RegisteredCompanions.RemoveAll(a => a.DeviceId == deviceId);
@@ -21,8 +24,11 @@ public class CompanionManager(ICompanionMessageHandler messageHandler)
     public CompanionDevice? GetCompanion(string deviceId) =>
         RegisteredCompanions.FirstOrDefault(c => c.DeviceId == deviceId);
 
-    public void RequestToolApproval(ToolApprovalRequest.ToolData toolData)
+    public Task<bool> RequestToolApprovalAsync(ToolApprovalRequest.ToolData toolData)
     {
+        if (ApprovedCompanions.Count <= 0) return Task.FromResult(false);
+        
+        var tcs = new TaskCompletionSource<bool>();
         var hash = HashPayload(toolData);
         var hashBase64 = Convert.ToBase64String(hash);
         var request = new ToolApprovalRequest
@@ -33,6 +39,9 @@ public class CompanionManager(ICompanionMessageHandler messageHandler)
             ExpiresAt = DateTime.Now.Add(ApprovalTimeout),
             Tool = toolData
         };
+        
+        _pendingApprovals.TryAdd(request.RequestId, tcs);
+        
         var data = new Dictionary<string, string>
         {
             { "request_id", request.RequestId },
@@ -46,6 +55,16 @@ public class CompanionManager(ICompanionMessageHandler messageHandler)
         
         ToolApprovals.Add(request);
         messageHandler.SendDataMessageToDevices(data, ApprovedCompanions.ToArray());
+        
+        return tcs.Task;
+    }
+
+    public void HandleToolResponse(string requestId, bool isApproved)
+    {
+        if (_pendingApprovals.TryRemove(requestId, out var tcs))
+        {
+            tcs.TrySetResult(isApproved);
+        }
     }
 
     public void ApproveCompanion(string deviceId, bool sendConfirmation = true)

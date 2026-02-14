@@ -39,7 +39,7 @@ public class VoiceSessionOrchestrator(
 
             _logger.LogInformation(" handing off to Agent for session {SessionId}", session.SessionId);
             var response = await agent.ProcessAsync(text, chat, speciality, connection.SatelliteInfo?.Area ?? "unknown", token);
-            _logger.LogInformation("LLM response for session {SessionId}: {ResponsePreview}", session.SessionId, response[..Math.Min(200, response.Length)]);
+            _logger.LogInformation("LLM response preview for session {SessionId}: {ResponsePreview}...", session.SessionId, response[..Math.Min(200, response.Length)]);
 
             var audioBytes = await InferTtsAsync(response, token);
             _logger.LogInformation("Synthesized audio for session {SessionId}, {ByteCount} bytes", session.SessionId, audioBytes.Length);

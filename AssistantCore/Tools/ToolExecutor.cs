@@ -30,15 +30,20 @@ public class ToolExecutor(
         if (tool.Attribute.RiskLevel > MaximumAutoApproveLevel)
         {
             logger.LogWarning("Tool {ToolName} requires manual approval due to its danger level ({DangerLevel}).", toolName, tool.Attribute.RiskLevel);
-            ToolApprovalRequest.ToolData data = new ToolApprovalRequest.ToolData
+            var data = new ToolApprovalRequest.ToolData
             {
                 Name = tool.Attribute.ToolName,
                 Description = tool.Attribute.Description,
                 RiskLevel = RiskLevel.Critical,
             };
-            manager.RequestToolApproval(data);
-            // TODO: track pending approvals and return result when approved/rejected
-            return $"Tool '{toolName}' requires approval before it can be executed. Approval requests have been sent to your approved devices.";
+            
+            var isApproved = await manager.RequestToolApprovalAsync(data);
+            if (!isApproved)
+            {
+                return "Tool execution was rejected by the user. Inform the user that you are unable to execute this tool.";
+            }
+            
+            logger.LogInformation("Tool {ToolName} has been approved for execution.", toolName);
         }
 
         try

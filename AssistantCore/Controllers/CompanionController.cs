@@ -16,7 +16,7 @@ public class CompanionController(
     [HttpGet]
     public IActionResult GetCompanions()
     {
-        var companions = manager.RegisteredCompanions.Select(c => new
+        var companions = manager.GetRegisteredCompanions().Select(c => new
         {
             device_id = c.DeviceId[..8], // Don't return full device id for security reasons
             device_name = c.DeviceName,
@@ -29,7 +29,7 @@ public class CompanionController(
     [HttpGet("approved")]
     public IActionResult GetApprovedCompanions()
     {
-        var companions = manager.ApprovedCompanions.Select(c => new
+        var companions = manager.GetApprovedCompanions().Select(c => new
         {
             device_id = c.DeviceId,
             device_name = c.DeviceName,
@@ -57,7 +57,11 @@ public class CompanionController(
             FirebaseToken = req.FirebaseToken,
             DeviceName = req.DeviceName,
             IsApproved = false,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            Permissions = new CompanionDevice.CompanionPermissions
+            {
+                CanApproveTools = true
+            }
         };
 
         manager.RegisterCompanion(device);
@@ -83,7 +87,7 @@ public class CompanionController(
         
         // TODO: Check nonce replay using redis caching
         
-        ToolApprovalRequest? correspondingRequest = manager.ToolApprovals.FirstOrDefault(rq => rq.RequestId == answer.RequestId);
+        ToolApprovalRequest? correspondingRequest = manager.GetToolApprovals().FirstOrDefault(rq => rq.RequestId == answer.RequestId);
         if (correspondingRequest == null)
         {
             logger.LogWarning("No corresponding tool approval request found for answer from device {DeviceId}", answer.DeviceId);
@@ -151,7 +155,7 @@ public class CompanionController(
 
         if (!ValidateDeviceId(deviceId, false, out var device, out var errorResult)) return errorResult!;
         
-        manager.ApproveCompanion(deviceId, false);
+        manager.ApproveCompanion(deviceId);
         logger.LogInformation("Device {DeviceName} ({DeviceId}) approved", device!.DeviceName, device.DeviceId);
         return Ok();
     }

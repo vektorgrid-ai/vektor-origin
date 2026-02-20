@@ -7,8 +7,10 @@ using AssistantCore.Chat;
 using AssistantCore.Companion;
 using AssistantCore.Companion.Messaging;
 using AssistantCore.Companion.Security;
+using AssistantCore.Database;
 using AssistantCore.Middleware;
 using AssistantCore.Workers.LoadBalancing;
+using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Serilog.Events;
 using Serilog.Formatting.Compact;
@@ -54,6 +56,9 @@ try
     builder.Host.UseSerilog();
 
     builder.Services.AddControllers();
+    // Configure DbContext to use SQLite with a file
+    builder.Services.AddDbContext<AssistantDbContext>(options =>
+        options.UseSqlite("Data Source=assistant.db"));
 
     builder.Services.AddSingleton(provider =>
     {
@@ -81,6 +86,13 @@ try
     builder.Services.AddSingleton<LlmAgent>();
 
     var app = builder.Build();
+    
+    // Apply migrations on startup
+    using (var scope = app.Services.CreateScope())
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<AssistantDbContext>();
+        dbContext.Database.Migrate();
+    }
 
     // Register middleware for exception logging and request logging
     app.UseMiddleware<ExceptionLoggingMiddleware>();

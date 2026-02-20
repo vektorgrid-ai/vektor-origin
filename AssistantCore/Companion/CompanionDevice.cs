@@ -1,8 +1,10 @@
-﻿namespace AssistantCore.Companion;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace AssistantCore.Companion;
 
 public class CompanionDevice
 {
-    public required string DeviceId { get; set; }
+    [Key] public required string DeviceId { get; set; }
     public string DeviceName { get; set; } = "Unnamed Device";
     public string? FirebaseToken { get; set; }
     public bool IsApproved { get; set; }
@@ -10,7 +12,7 @@ public class CompanionDevice
     public DateTime CreatedAt { get; set; }
     public CompanionPermissions Permissions { get; set; }
 
-    public struct CompanionPermissions
+    public class CompanionPermissions
     {
         public bool CanApproveTools { get; set; }
     }

@@ -3,30 +3,72 @@ using System.Security.Cryptography;
 using System.Text;
 using AssistantCore.Companion.Dto;
 using AssistantCore.Companion.Messaging;
+using AssistantCore.Database;
 
 namespace AssistantCore.Companion;
 
-public class CompanionManager(ICompanionMessageHandler messageHandler)
+public class CompanionManager(ICompanionMessageHandler messageHandler, IServiceProvider serviceProvider)
 {
     public static readonly TimeSpan ApprovalTimeout = TimeSpan.FromMinutes(5);
-    
-    public readonly List<CompanionDevice> RegisteredCompanions = [];
-    public List<CompanionDevice> ApprovedCompanions => RegisteredCompanions.Where(c => c.IsApproved).ToList();
-    
-    // TODO: put in central storage
-    public readonly List<ToolApprovalRequest> ToolApprovals = [];
+
+    public List<CompanionDevice> GetRegisteredCompanions()
+    {
+        using var scope = serviceProvider.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AssistantDbContext>();
+        return dbContext.Companions.ToList();
+    }
+
+    public List<CompanionDevice> GetApprovedCompanions()
+    {
+        using var scope = serviceProvider.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AssistantDbContext>();
+        return dbContext.Companions.Where(c => c.IsApproved).ToList();
+    }
+
+    public List<ToolApprovalRequest> GetToolApprovals()
+    {
+        using var scope = serviceProvider.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AssistantDbContext>();
+        return dbContext.ToolApprovals.ToList();
+    }
     
     private readonly ConcurrentDictionary<string, TaskCompletionSource<bool>> _pendingApprovals = new();
 
-    public void RegisterCompanion(CompanionDevice device) => RegisteredCompanions.Add(device);
-    public void UnregisterCompanion(string deviceId) => RegisteredCompanions.RemoveAll(a => a.DeviceId == deviceId);
+    public void RegisterCompanion(CompanionDevice device)
+    {
+        using var scope = serviceProvider.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AssistantDbContext>();
 
-    public CompanionDevice? GetCompanion(string deviceId) =>
-        RegisteredCompanions.FirstOrDefault(c => c.DeviceId == deviceId);
+        if (!dbContext.Companions.Any(d => d.DeviceId == device.DeviceId))
+        {
+            dbContext.Companions.Add(device);
+            dbContext.SaveChanges();
+        }
+    }
+
+    public void UnregisterCompanion(string deviceId)
+    {
+        using var scope = serviceProvider.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AssistantDbContext>();
+        var devices = dbContext.Companions.Where(c => c.DeviceId == deviceId).ToList();
+        if (devices.Count != 0)
+        {
+            dbContext.Companions.RemoveRange(devices);
+            dbContext.SaveChanges();
+        }
+    }
+
+    public CompanionDevice? GetCompanion(string deviceId)
+    {
+        using var scope = serviceProvider.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AssistantDbContext>();
+        return dbContext.Companions.FirstOrDefault(c => c.DeviceId == deviceId);
+    }
 
     public Task<bool> RequestToolApprovalAsync(ToolApprovalRequest.ToolData toolData)
     {
-        if (ApprovedCompanions.Count <= 0) return Task.FromResult(false);
+        var approvedCompanions = GetApprovedCompanions();
+        if (approvedCompanions.Count <= 0) return Task.FromResult(false);
         
         var tcs = new TaskCompletionSource<bool>();
         var hash = HashPayload(toolData);
@@ -53,8 +95,14 @@ public class CompanionManager(ICompanionMessageHandler messageHandler)
             { "tool_risk_level", request.Tool.RiskLevel.ToString() }
         };
         
-        ToolApprovals.Add(request);
-        messageHandler.SendDataMessageToDevices(data, ApprovedCompanions.ToArray());
+        using (var scope = serviceProvider.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AssistantDbContext>();
+            dbContext.ToolApprovals.Add(request);
+            dbContext.SaveChanges();
+        }
+
+        messageHandler.SendDataMessageToDevices(data, approvedCompanions.ToArray());
         
         return tcs.Task;
     }
@@ -69,10 +117,15 @@ public class CompanionManager(ICompanionMessageHandler messageHandler)
 
     public void ApproveCompanion(string deviceId, bool sendConfirmation = true)
     {
-        var device = GetCompanion(deviceId);
+        using var scope = serviceProvider.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AssistantDbContext>();
+        
+        var device = dbContext.Companions.FirstOrDefault(c => c.DeviceId == deviceId);
         if (device == null) return;
         
         device.IsApproved = true;
+        dbContext.SaveChanges();
+        
         if (sendConfirmation)
             messageHandler.SendNotificationToDevices("Device Approved",
             $"Your device '{device.DeviceName}' has been approved. You can now receive notifications and tool approval requests.", 
@@ -81,7 +134,8 @@ public class CompanionManager(ICompanionMessageHandler messageHandler)
 
     public void SendNotification(string title, string message)
     {
-        messageHandler.SendNotificationToDevices(title, message, ApprovedCompanions.ToArray());
+        var approvedCompanions = GetApprovedCompanions();
+        messageHandler.SendNotificationToDevices(title, message, approvedCompanions.ToArray());
     }
 
     public bool VerifyHash(ToolApprovalRequest request, string payloadHash)

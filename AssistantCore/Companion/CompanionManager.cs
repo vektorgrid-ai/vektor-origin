@@ -34,16 +34,25 @@ public class CompanionManager(ICompanionMessageHandler messageHandler, IServiceP
     
     private readonly ConcurrentDictionary<string, TaskCompletionSource<bool>> _pendingApprovals = new();
 
-    public void RegisterCompanion(CompanionDevice device)
+    /// <summary>
+    /// Inserts a new companion into the database if one doesn't exist already
+    /// </summary>
+    /// <param name="device">The CompanionDevice to try to insert</param>
+    /// <returns>The companion device that has either been inserted or already existed with the same ID as the requested device</returns>
+    public CompanionDevice TryRegisterCompanion(CompanionDevice device)
     {
         using var scope = serviceProvider.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<AssistantDbContext>();
+        var devices = dbContext.Companions.Where(c => c.DeviceId == device.DeviceId).ToList();
 
-        if (!dbContext.Companions.Any(d => d.DeviceId == device.DeviceId))
+        if (devices.Count == 0)
         {
             dbContext.Companions.Add(device);
             dbContext.SaveChanges();
+            return device;
         }
+
+        return devices.Single();
     }
 
     public void UnregisterCompanion(string deviceId)

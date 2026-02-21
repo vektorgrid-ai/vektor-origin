@@ -52,7 +52,7 @@ public class CompanionController(
     {
         var device = new CompanionDevice
         {
-            DeviceId = Guid.NewGuid().ToString(),
+            DeviceId = req.DeviceId,
             PublicKey = req.PublicKey,
             FirebaseToken = req.FirebaseToken,
             DeviceName = req.DeviceName,
@@ -64,10 +64,10 @@ public class CompanionController(
             }
         };
 
-        manager.RegisterCompanion(device);
+        manager.TryRegisterCompanion(device); // ignore return value
 
-        logger.LogInformation("New companion enrolled: {DeviceName} ({DeviceId})", device.DeviceName, device.DeviceId);
-        return Ok(new { device_id = device.DeviceId, status = "PENDING_APPROVAL" });
+        logger.LogInformation("Companion enrolled: {DeviceName} ({DeviceId})", device.DeviceName, device.DeviceId);
+        return Ok();
     }
     
     [HttpPost("new_token")]

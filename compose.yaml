@@ -8,6 +8,19 @@ services:
       - SEQ_FIRSTRUN_NOAUTHENTICATION=true
     networks:
       - aiassistant
+      
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - aiassistant
         
   core:
     build:
@@ -21,11 +34,16 @@ services:
       - MINIMUM_LOG_LEVEL=Debug
       - MAXIMUM_AUTO_APPROVE_RISK_LEVEL=Medium
       - GOOGLE_APPLICATION_CREDENTIALS=/app/google-service-key.json
+      - ConnectionStrings__DefaultConnection=Host=db;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
     networks:
       - aiassistant
     depends_on:
       - seq
+      - db
 
 networks:
   aiassistant:
     external: true
+
+volumes:
+  db_data:

@@ -16,6 +16,7 @@ using Serilog.Events;
 using Serilog.Formatting.Compact;
 
 string? seqUrl = Environment.GetEnvironmentVariable("SEQ_URL");
+string? apiKey = Environment.GetEnvironmentVariable("SEQ_API_KEY");
 bool useSeq = !string.IsNullOrEmpty(seqUrl);
 bool useFileLogging = Environment.GetEnvironmentVariable("USE_FILE_LOGGING") == "true";
 string logLevel = Environment.GetEnvironmentVariable("MINIMUM_LOG_LEVEL") ?? "Information";
@@ -41,7 +42,7 @@ if (useFileLogging)
 }
 
 if (useSeq)
-    loggerConfig = loggerConfig.WriteTo.Seq(seqUrl!, apiKey: null, restrictedToMinimumLevel: minimumLevel);
+    loggerConfig = loggerConfig.WriteTo.Seq(seqUrl!, apiKey: apiKey, restrictedToMinimumLevel: minimumLevel);
 
 var recentSink = new RecentLogSink();
 loggerConfig = loggerConfig
@@ -56,9 +57,13 @@ try
     builder.Host.UseSerilog();
 
     builder.Services.AddControllers();
-    // Configure DbContext to use SQLite with a file
+    
+    string? connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+    if (string.IsNullOrEmpty(connectionString))
+        throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+    
     builder.Services.AddDbContext<AssistantDbContext>(options =>
-        options.UseSqlite("Data Source=assistant.db"));
+        options.UseNpgsql(connectionString));
 
     builder.Services.AddSingleton(provider =>
     {

@@ -690,3 +690,4 @@ fabric.properties
 ## Custom rules for this repository
 logs/
 google-service-key.json
+.env

@@ -173,7 +173,7 @@ public class SatelliteConnection
         }
     }
     
-    public async Task SendTtsAsync(byte[] ttsData, CancellationToken token)
+    public async Task SendTtsAsync(byte[] ttsData, CancellationToken token, string? transcription = null)
     {
         if (State != SatelliteConnectionState.WaitingForProcessing) return;
         State = SatelliteConnectionState.Playback;
@@ -183,7 +183,8 @@ public class SatelliteConnection
             Type = "tts.start",
             SessionId = _activeSession!.SessionId,
             AudioFormat = SatelliteInfo!.AudioFormat,
-            Streaming = true
+            Streaming = true,
+            Transcription = transcription
         };
         await SendMessageAsync(ttsStart, token);
 

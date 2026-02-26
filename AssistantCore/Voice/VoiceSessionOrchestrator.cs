@@ -44,7 +44,7 @@ public class VoiceSessionOrchestrator(
             var audioBytes = await InferTtsAsync(response, token);
             _logger.LogInformation("Synthesized audio for session {SessionId}, {ByteCount} bytes", session.SessionId, audioBytes.Length);
 
-            await connection.SendTtsAsync(audioBytes, token);
+            await connection.SendTtsAsync(audioBytes, token, response);
             _logger.LogInformation("Sent TTS for session {SessionId}", session.SessionId);
         }
         catch (OperationCanceledException)

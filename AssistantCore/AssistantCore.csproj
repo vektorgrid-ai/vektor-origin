@@ -1,11 +1,12 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
     <PropertyGroup>
         <TargetFramework>net10.0</TargetFramework>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
-    </PropertyGroup>
+      <UserSecretsId>aa0e494d-166b-477f-89fb-1dca5e5fcc99</UserSecretsId>
+  </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="FirebaseAdmin" Version="3.4.0" />

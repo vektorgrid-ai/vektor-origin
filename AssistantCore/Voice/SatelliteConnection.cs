@@ -209,7 +209,7 @@ public class SatelliteConnection
             SessionId = _activeSession!.SessionId
         };
         await SendMessageAsync(ttsEnd, token);
-        State = SatelliteConnectionState.Connected;
+        State = SatelliteConnectionState.Ready;
         _logger?.LogInformation("Finished TTS playback for session {SessionId} on connection {ConnectionId}", _activeSession.SessionId, ConnectionId);
     }
 
@@ -225,7 +225,7 @@ public class SatelliteConnection
         _logger?.LogWarning("Sending error to connection {ConnectionId}: {Code} {Message}", ConnectionId, code, message);
         await SendMessageAsync(error, token);
 
-        State = SatelliteConnectionState.Connected;
+        State = SatelliteConnectionState.Ready;
     }
 
     public async Task SendBargeInAsync(CancellationToken token)
@@ -263,4 +263,3 @@ public class SatelliteConnection
         return (sampleRate * bytesPerSample * channels * frameDurationMs) / 1000;
     }
 }
-
